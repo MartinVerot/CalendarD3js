@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="fr">
+<head>
+	<meta charset="UTF-8">
+<link href='http://fonts.googleapis.com/css?family=Permanent+Marker' rel='stylesheet' type='text/css'>
+	<link rel="stylesheet" type="text/css" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/themes/smoothness/jquery-ui.css" />
+	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/jquery-ui.min.js"></script>	
+		<title>Calendar</title>
+	
+
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+body {
+  overflow: hidden; /* Hide scrollbars */
+  width:100%;
+  height:100%;
+  margin: 0 0 0 0;
+  padding: 0 0 0 0;
+  font-family: "Pragati Narrow";
+  font-size: 1.1em;
+}
+.boldColor {
+	font-weight:bold;
+	fill:white;}
+	
+.bold {
+	font-weight:bold;
+}	
+</style>
+</head>
+<body>
+
+<svg id="calendar">
+
+
+</svg>
+
+
+<script type="text/javascript" >
+Date.prototype.yyyymmdd = function() {
+  var mm = this.getMonth() + 1; // getMonth() is zero-based
+  var dd = this.getDate();
+
+  return [this.getFullYear(),
+          (mm>9 ? '' : '0') + mm,
+          (dd>9 ? '' : '0') + dd
+         ].join('-');
+};
+
+const getDatesBetweenDates = (startDate, endDate) => {
+  let dates = []
+  //to avoid modifying the original date
+  const theDate = new Date(startDate)
+  while (theDate < endDate) {
+    dates = [...dates, new Date(theDate)]
+    theDate.setDate(theDate.getDate() + 1)
+  }
+  dates = [...dates, endDate]
+  return dates
+}
+
+var Calendar=d3.selectAll("#calendar");
+	Calendar.attr('width','100%').attr('height','100%').attr("viewBox", "0 0 1920 1080")
+const formatDay = ["D","L", "Ma", "Me", "J", "V", "S"];
+const formatMonth = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
+const colors = {'palecolor':'#eef9cb','maincolor':'#9ec219','specialDay':'#f4abdb', 'period':'#e6e6e6', 'monthcolor':'white', 'extraSpecial':'#d71c98'};
+///palecolor '#e2f3a1'
+
+
+var startingDay = new Date('2021-09-01');
+var endingDay = new Date('2022-07-31');
+
+var specialDays = [
+		{'startDay' :'2021-09-03','text':'Orga. Base 1'},
+		{'startDay' :'2021-09-01','text':'Chimie des solutions'},
+		{'startDay' :'2021-09-06','text':'Physique rentrée'},
+		{'startDay' :'2021-09-07','text':'Orga. Base 2'},
+		{'startDay' :'2021-09-18','text':'Cinétique 1'},
+		{'startDay' :'2021-09-29','text':'Chimie théorique'},
+		{'startDay' :'2021-10-18','text':'Orga. Base 3'},
+		{'startDay' :'2021-10-16','text':'Spectroscopie'},
+		{'startDay' :'2021-10-23','text':'Thermo/Méca Q/Élec'},
+		{'startDay' :'2021-11-13','text':'Complexes'},
+		{'startDay' :'2021-11-27','text':'Thermochimie'},
+		{'startDay' :'2021-12-04','text':'Électrochimie'},
+		{'startDay' :'2021-12-08','text':'Ag. Blanche A','color':'#e957b7','class':'boldColor'},	
+		{'startDay' :'2021-12-09','text':'Ag. Blanche B','color':'#e957b7','class':'boldColor'},		
+		{'startDay' :'2021-12-10','text':'Ag. Blanche C','color':'#e957b7','class':'boldColor'},			
+		{'startDay' :'2022-01-08','text':'Opt/ÉlecMag/Méca'},		
+		{'startDay' :'2022-01-15','text':'Chimie organique'},
+		{'startDay' :'2022-01-29','text':'Cinétique 2'},
+		{'startDay' :'2022-02-16','text':'Ag. Blanche A','color':'#e957b7','class':'boldColor'},	
+		{'startDay' :'2022-02-17','text':'Ag. Blanche B','color':'#e957b7','class':'boldColor'},		
+		{'startDay' :'2022-02-18','text':'Ag. Blanche C','color':'#e957b7','class':'boldColor'},		
+		{'startDay' :'2022-03-09','text':'Épreuve A','color':colors.extraSpecial,'class':'boldColor'},	
+		{'startDay' :'2022-03-10','text':'Épreuve B','color':colors.extraSpecial,'class':'boldColor'},		
+		{'startDay' :'2022-03-11','text':'Épreuve C','color':colors.extraSpecial,'class':'boldColor'},				
+		{'startDay' :'2021-10-30','endDay' :'2021-11-07','text':'Toussaint'},
+		{'startDay' :'2021-11-11','color':colors.period,'text':'Armistice'},
+		{'startDay' :'2022-04-18','color':colors.period,'text':'Pâques'},
+		{'startDay' :'2022-05-26','color':colors.period,'text':'Ascension'},
+		//{'startDay' :'2022-06-06','color':colors.period,'text':'Pentecôte'},
+		{'startDay' :'2021-12-18','endDay' :'2022-01-02','text':'Noël'},
+		{'startDay' :'2022-01-31','endDay' :'2022-02-04','text':'Ski'},
+		{'startDay' :'2022-02-19','endDay' :'2022-03-08','text':'Révision'},
+		{'startDay' :'2022-05-30','endDay' :'2022-06-10','text':'Révision'},
+		{'startDay' :'2022-06-13','endDay' :'2022-07-02','text':'Oraux','color':colors.extraSpecial},
+		{'startDay' :'2022-07-05','text':'Résultats','color':colors.extraSpecial,'class':'boldColor'},
+	];
+var specialText = [
+		{'startDay' :'2021-11-04','text':'Toussaint','angle':-60,'class':'bold'},
+		{'startDay' :'2021-12-25','text':'Noël','angle':-60,'class':'bold'},
+		{'startDay' :'2022-02-03','text':'Ski','angle':-60,'class':'bold'},
+		{'startDay' :'2022-02-23','text':'Révisions','angle':-60,'class':'bold'},
+		{'startDay' :'2022-02-23','text':'Révisions','angle':-60,'class':'bold'},
+		{'startDay' :'2022-03-05','text':'Révisions','angle':-60,'class':'bold'},
+		{'startDay' :'2022-06-05','text':'Révisions','angle':-60,'class':'bold'},
+		{'startDay' :'2022-06-23','text':'Oraux','angle':-60,'class':'boldColor'},
+	]	
+
+
+
+
+/////////////////////////////////////
+/////////////////////////////////////
+
+var allDays = getDatesBetweenDates(startingDay,endingDay);
+
+var rectDay = {'width':170,'height':30};
+//console.log(allDays);
+//*******************************
+//number on the left 1 -> 31
+//*******************************
+DayIndix = Calendar.append("g").attr("transform","translate(20,10)");
+for (var j=1;j<32;j++) {
+	DayIndix.append("text").text(j)
+		.attr("x",00).attr("y",(j+0.71)*rectDay.height)
+		.attr("text-anchor","end").style('fill','black');
+}
+//*******************************
+//Placing all days
+//*******************************
+var CalendarInner = Calendar.append("g").attr("transform","translate(30,10)");
+allDays.forEach(function(element){
+	var thisDay = CalendarInner.append("g")
+		.attr("id",'day'+element.getFullYear()+'-'+String(element.getMonth()+1).padStart(2, '0')+'-'+String(element.getDate()).padStart(2, '0'))
+		.attr("transform","translate("+((element.getMonth()-startingDay.getMonth()+12*(element.getFullYear()-startingDay.getFullYear()))*rectDay.width)+","+(element.getDate()*rectDay.height)+")");
+		
+	//Rectangle
+	thisDay.append("rect").attr('class','bigRec')		
+		.attr('width',rectDay.width).attr('height',rectDay.height).style('fill','none')
+		.style('stroke','#cccccc').style('stroke-width','1px');
+		
+	if (element.getDay()==0) {
+		thisDay.selectAll('.bigRec').style('fill',colors.palecolor)
+	}		
+		
+	//week day
+	thisDay.append("text").text(formatDay[element.getDay()])
+		.attr("x",18).attr("y",0.71*rectDay.height)
+		.attr("text-anchor","end").style('fill','black').style('font-size','0.7em');	
+		
+//**********************************		
+//Placing months names
+//**********************************
+var CalendarMonths = Calendar.append("g").attr("transform","translate(30,"+(10-rectDay.height)+")");
+	if (element.getDate()==1) {
+	var thisMonth = CalendarMonths.append("g").attr("transform","translate("+((element.getMonth()-startingDay.getMonth()+12*(element.getFullYear()-startingDay.getFullYear()))*rectDay.width)+","+(element.getDate()*rectDay.height)+")")
+	//Rectangle
+		thisMonth.append("rect")
+			.attr('width',rectDay.width).attr('height',rectDay.height).style('fill','white')
+			.style('stroke',colors.maincolor).style('stroke-width','1px').style('fill',colors.maincolor);
+	//text		
+		thisMonth.append("text").text(formatMonth[element.getMonth()])
+			.attr("x",rectDay.width*0.5).attr("y",0.71*rectDay.height)
+			.attr("text-anchor","middle").style('fill',colors.monthcolor).style('font-size','1.2em').style('font-weight','bold');
+	}		
+
+		
+		
+});
+
+//Treating all special days and periods
+specialDays.forEach(function(element){
+	if(element.endDay===undefined){
+		var Day = Calendar.selectAll("#day"+element.startDay);
+		if(element.color!==undefined){
+			Day.selectAll('.bigRec')
+				.style('fill',element.color)
+		}else{
+			Day.selectAll('.bigRec')
+				.style('fill',colors.specialDay)
+		}
+
+		//Text
+		Day.append("text").classed("label", true).text(element.text)
+			.attr("x",30).attr("y",0.71*rectDay.height)
+			.attr("text-anchor","start").style('font-size','1em');		
+		if(element.class!==undefined){	
+			Day.selectAll(".label").classed(element.class, true);	
+		}	
+	}else {
+		getDatesBetweenDates(new Date(element.startDay),new Date(element.endDay)).forEach(function(element2){
+			var Day = Calendar.selectAll("#day"+element2.yyyymmdd());
+				if(element.color!==undefined){
+					Day.selectAll('.bigRec')
+						.style('fill',element.color)
+				}else{
+					Day.selectAll('.bigRec')
+						.style('fill',colors.period)
+				}			
+				Day.selectAll('.bigRec').style('stroke','none')
+
+		})
+	}
+})
+
+//Treating Special Text
+specialText.forEach(function(element){
+		var dayDate = new Date(element.startDay);
+		//Text
+		var Day=Calendar.append("text").attr("x",((dayDate.getMonth()-startingDay.getMonth()+12*(dayDate.getFullYear()-startingDay.getFullYear()))*rectDay.width)).attr("y",(dayDate.getDate()*rectDay.height))
+			.classed("label", true).text(element.text)
+			//.attr("x",).attr("y",)
+			.attr("text-anchor","middle").style('font-size','1.2em');		
+		if(element.class!==undefined){	
+			Day.classed(element.class, true);	
+		}	
+		if(element.angle!==undefined){				
+			Day.attr("transform","translate("+(0.5*(rectDay.width)+30)+","+(0.5*rectDay.height)+")");	
+		}	
+})
+
+</script>
+
+
+</body>
+</html>
